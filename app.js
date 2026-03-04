@@ -42,6 +42,25 @@ async function init() {
     }
 }
 
+// --- HISTORY & UNDO ---
+function saveHistory() {
+    // Save the state BEFORE the change
+    historyStack.push(JSON.stringify(currentPattern));
+    if (historyStack.length > 50) historyStack.shift(); 
+}
+
+window.addEventListener('keydown', (e) => {
+    // Check for Ctrl+Z or Cmd+Z (Mac)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (historyStack.length > 0) {
+            e.preventDefault();
+            const previousState = historyStack.pop();
+            currentPattern = JSON.parse(previousState);
+            render();
+        }
+    }
+});
+
 // --- UTILITIES ---
 const hexToRgb = (hex) => ({
     r: parseInt(hex.slice(1, 3), 16),
@@ -76,20 +95,6 @@ function updatePreview() {
     ctx.drawImage(currentImage, 0, 0, controls.preview.width, controls.preview.height);
 }
 
-function saveHistory() {
-    historyStack.push(JSON.stringify(currentPattern));
-    if (historyStack.length > 50) historyStack.shift(); 
-}
-
-window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'z') {
-        if (historyStack.length > 0) {
-            currentPattern = JSON.parse(historyStack.pop());
-            render();
-        }
-    }
-});
-
 if (controls.toggleCodes) {
     controls.toggleCodes.onclick = () => {
         showCodes = !showCodes;
@@ -103,6 +108,7 @@ if (controls.toggleCodes) {
 function generate() {
     if (!currentImage || BEAD_PALETTE.length === 0) return;
     controls.loading.classList.remove('hidden');
+    historyStack = []; // Clear history on new generation
 
     setTimeout(() => {
         const gridSize = parseInt(controls.grid.value);
@@ -142,13 +148,9 @@ function generate() {
             }
         }
 
-        // Logic: Substitute colors < 5 pcs or exceeding Max Colors
         const max = parseInt(controls.maxColors.value);
         let sortedPairs = Object.entries(tempCounts).sort((a,b) => b[1] - a[1]);
-        
-        // Allowed list: Colors in Top N AND used 5+ times
         let finalAllowed = sortedPairs.slice(0, max).filter(c => c[1] >= 5).map(c => c[0]);
-        // Fallback: If everything is < 5, just take the top used color
         if (finalAllowed.length === 0 && sortedPairs.length > 0) finalAllowed = [sortedPairs[0][0]];
 
         currentPattern = rawPattern.map(bead => {
@@ -171,14 +173,11 @@ function render() {
     controls.container.innerHTML = '';
     const size = parseInt(controls.grid.value);
     
-    // Exact Height Fit
-    const availableHeight = (window.innerHeight * 0.85) - 40; // 85vh minus some padding for controls
+    const availableHeight = (window.innerHeight * 0.85) - 40; 
     const cellSize = Math.floor(availableHeight / size);
 
     const wrapper = document.createElement('div');
     wrapper.style.position = 'relative';
-    wrapper.style.marginTop = '-10px'; // Space for top ruler
-    wrapper.style.marginLeft = '0px'; // Space for left ruler
 
     const grid = document.createElement('div');
     grid.style.display = 'grid';
@@ -217,7 +216,7 @@ function renderRulers(wrapper, size, cellSize) {
         const n = document.createElement('div');
         n.style.width = `${cellSize}px`;
         n.className = 'text-[8px] font-sans text-fbfblack/50 text-center';
-        n.innerText = i % 3 === 0 ? i : '';
+        n.innerText = i % 5 === 0 ? i : '';
         top.appendChild(n);
     }
     wrapper.appendChild(top);
@@ -227,8 +226,8 @@ function renderRulers(wrapper, size, cellSize) {
     for(let i=1; i<=size; i++) {
         const n = document.createElement('div');
         n.style.height = `${cellSize}px`;
-        n.className = 'text-[8px] font-sans text-fbfblack/50 flex items-center justify-end pr-2';
-        n.innerText = i % 3 === 0 ? i : '';
+        n.className = 'text-[8px] font-sans text-fbfblack/50 flex items-center justify-end pr-1';
+        n.innerText = i % 5 === 0 ? i : '';
         left.appendChild(n);
     }
     wrapper.appendChild(left);
@@ -240,20 +239,17 @@ function openPicker(index, x, y, activeCodes) {
     picker.innerHTML = '';
     picker.classList.remove('hidden');
     
-    // Position the picker near the click
     picker.style.left = `${Math.min(x, window.innerWidth - 150)}px`;
     picker.style.top = `${Math.min(y, window.innerHeight - 200)}px`;
 
-    // 1. Current Palette Colors
     activeCodes.forEach(code => {
         const bead = BEAD_PALETTE.find(b => b.code === code);
         const btn = document.createElement('div');
         btn.className = "w-6 h-6 rounded border cursor-pointer hover:scale-110 transition shadow-sm";
         btn.style.backgroundColor = bead.hex;
-        btn.title = `Change to ${code}`;
         btn.onclick = (e) => {
             e.stopPropagation();
-            saveHistory();
+            saveHistory(); // Save BEFORE changing pattern
             currentPattern[index] = bead;
             picker.classList.add('hidden');
             render();
@@ -261,35 +257,29 @@ function openPicker(index, x, y, activeCodes) {
         picker.appendChild(btn);
     });
 
-    // 2. Clear/Delete Bead Button (Red slash on white)
     const clearBtn = document.createElement('div');
     clearBtn.className = "w-6 h-6 rounded border cursor-pointer hover:scale-110 transition shadow-sm relative bg-white overflow-hidden";
-    clearBtn.title = "Remove bead";
     
-    // Create the red diagonal slash
     const slash = document.createElement('div');
     slash.style.position = 'absolute';
-    slash.style.top = '100%';
+    slash.style.top = '0';
     slash.style.left = '0';
-    slash.style.width = '141%'; // Length for a 45-degree angle
+    slash.style.width = '150%';
     slash.style.height = '2px';
-    slash.style.backgroundColor = '#ef4444'; // Tailwind red-500
-    slash.style.transform = 'translateY(-50%) rotate(-45deg)';
-    slash.style.transformOrigin = 'left top';
+    slash.style.backgroundColor = '#ef4444';
+    slash.style.transform = 'rotate(45deg)';
+    slash.style.transformOrigin = 'top left';
     
     clearBtn.appendChild(slash);
-    
     clearBtn.onclick = (e) => {
         e.stopPropagation();
-        saveHistory();
-        currentPattern[index] = null; // Set to null for a blank cell
+        saveHistory(); // Save BEFORE changing pattern
+        currentPattern[index] = null;
         picker.classList.add('hidden');
         render();
     };
-    
     picker.appendChild(clearBtn);
 
-    // Close picker when clicking away
     const closeHandler = (e) => {
         if (!picker.contains(e.target)) {
             picker.classList.add('hidden');
@@ -328,7 +318,7 @@ function renderLegend(counts) {
             const others = Object.keys(counts).filter(c => c !== code);
             if (others.length === 0) return alert("Cannot delete the last remaining color.");
             
-            saveHistory();
+            saveHistory(); // Save BEFORE changing pattern
             const subBead = BEAD_PALETTE.find(x => x.code === others.reduce((a, b) => {
                 const dA = getDistance(hexToRgb(bead.hex), hexToRgb(BEAD_PALETTE.find(y => y.code === a).hex));
                 const dB = getDistance(hexToRgb(bead.hex), hexToRgb(BEAD_PALETTE.find(y => y.code === b).hex));

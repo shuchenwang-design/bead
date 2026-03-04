@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuse Bead Blueprint Generator</title>
+    <link rel="icon" href="icon.png" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #blueprintContainer { max-height: 80vh; display: flex; justify-content: center; align-items: flex-start; }
+        /* Update these styles in your <style> block */
+        #blueprintWrapper {
+            position: relative;
+            /* Extra padding to ensure rulers (top/left) are visible */
+            padding-top: 30px; 
+            padding-left: 30px;
+            display: inline-block;
+        }
+
+        /* Ensure the container itself doesn't hide the overflow of the rulers */
+        .lg:col-span-8 {
+            overflow: visible !important;
+        }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #2563eb; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media print { .no-print { display: none; } }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        /* General Slider Reset */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        /* 1. THE TRACK (The line) */
+        /* Chrome, Safari, Edge, Opera */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height:8px;
+            cursor: pointer;
+            border-radius: 2px;
+            border: 1px solid #292725; /* fbfblack */
+        }
+
+        /* Firefox */
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height:8px;
+            cursor: pointer;
+            border-radius: 2px;
+            border: 1px solid #292725; /* fbfblack */
+        }
+
+        /* 2. THE THUMB (The handle) */
+        /* Chrome, Safari, Edge, Opera */
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px;
+            width: 13px;
+            rotate: -10deg;
+            background: #EDA711; /* fbfgold */
+            border-radius: 2px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px; /* Centers thumb on track */
+            border: 1px solid #292725; /* fbfblack */
+            image-rendering: pixelated;
+        }
+
+        /* Firefox */
+        input[type=range]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            background: #EDA711;
+            cursor: pointer;
+            border: 2px solid #292725;
+            border-radius: 0px;
+        }
+
+        /* 3. HOVER & ACTIVE STATES */
+        input[type=range]:active::-webkit-slider-thumb {
+            background: #8F3333; /* fbfred when sliding */
+            rotate: 45deg;
+            transition: all 0.2s ease;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Tiny5&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+                'fbfolive': '#415E1D',
+                'fbfblue': '#2452AD',
+                'fbfgold': '#EDA711',
+                'fbfred': '#8F3333',
+                'fbfblack': '#292725',
+                'fbfwhite': '#F0E9DD',
+            },
+            fontFamily: {
+              'pixel': ['"Tiny5"', 'system-ui', 'sans-serif'],
+              'sans': ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+            },
+          },
+        },
+      }
+    </script>
+
+</head>
+<body class="bg-fbfblack p-4 font-pixel h-[100vh] flex flex-col">
+    <h1 class="font-pixel text-3xl text-fbfwhite pb-2">Fuse Bead Fuel</h1>
+    <div class="max-w-8xl w-full mx-auto flex-1 bg-fbfwhite p-6 rounded-xl shadow-lg relative">
+        <div id="loadingOverlay" class="hidden absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
+            <div class="spinner mb-4"></div>
+            <p class="font-pixel font-medium text-fbfblue">Generating Blueprint...</p>
+        </div>
+
+        
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-fbfblack h-full">
+            <div class="lg:col-span-2 space-y-6 no-print no-scrollbar overflow-y-auto max-h-[85vh]">
+                <section class="space-y-2">
+                    <label class="block border-b border-fbfblue text-sm uppercase font-bold text-fbfblue pb-1">Upload Image</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="w-full text-xs bg-fbfwhite border-none">
+                </section>
+
+                <section class="space-y-2">
+                    <label class="block border-b border-fbfred text-sm uppercase font-bold text-fbfred pb-1">Canvas Setup</label>
+                    <div>
+                        <div class="flex justify-between text-xs"><span>Grid Size</span><span id="gridVal" class="font-bold">50</span></div>
+                        <input type="range" id="gridScale" min="10" max="100" value="50" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs"><span>Max Colors</span><span id="colorVal" class="font-bold">20</span></div>
+                        <input type="range" id="maxColors" min="2" max="100" value="20" class="w-full">
+                    </div>
+                </section>
+
+                <section class="space-y-2">
+                    <label class="block border-b border-fbfolive text-sm uppercase font-bold text-fbfolive pb-1">Color Correction</label>
+                    <div class="w-full h-32 bg-transparent rounded border overflow-hidden flex items-center justify-center">
+                        <canvas id="previewCanvas" class="max-w-full max-h-full"></canvas>
+                    </div>
+                    <div class="space-y-1">
+                        <div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-xs">Hue</span>
+                                <span><span class="font-bold" id="hueVal">0</span>°</span>
+                            </div>
+                            <input type="range" id="hue" min="-180" max="180" value="0" class="w-full">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-xs">Saturation</span>
+                                <span><span class="font-bold" id="satVal">100</span>%</span>
+                            </div>
+                            <input type="range" id="sat" min="0" max="200" value="100" class="bg-fbfolive w-full">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-xs">Lightness</span>
+                                <span><span class="font-bold" id="lightVal">100</span>%</span>
+                            </div>
+                            <input type="range" id="light" min="0" max="200" value="100" class="w-full">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-xs">Contrast</span>
+                                <span><span class="font-bold" id="contrastVal">100</span>%</span>
+                            </div>
+                            <input type="range" id="contrast" min="0" max="200" value="100" class="w-full">
+                        </div>
+                    </div>
+                </section>
+                
+                <button id="generateBtn" class="w-full bg-fbfolive text-sm text-white py-2 rounded-lg font-bold hover:bg-fbfblue shadow-md">Generate Blueprint</button>
+            </div>
+
+            <div class="lg:col-span-8 bg-transparent rounded-lg flex flex-col justify-center items-center overflow-auto relative min-h-0">
+                <div id="blueprintWrapper" class="relative flex items-center justify-center h-full w-full"> 
+                    <div id="blueprintContainer" class="flex justify-center items-center h-full w-full">
+                        <p class="text-fbfgold self-center text-center">Loading default pattern...</p>
+                    </div>
+                </div>
+            </div>
+
+           <div class="lg:col-span-2 border-l pl-4 flex flex-col h-full max-h-[85vh]">
+                <div class="flex sticky top-0 bg-fbfwhite z-10 items-center justify-between mb-4 pb-2 border-b border-fbfblack/50">
+                    <h3 class="text-sm font-bold uppercase text-fbfblack">Palette</h3>
+                    <button id="toggleCodes" class="px-2 py-1 text-fbfwhite text-[10px] bg-fbfred hover:bg-fbfred/80 rounded font-bold transition">
+                        LABEL: ON
+                    </button>
+                </div>
+                
+                <div id="legendContainer" class="space-y-2 overflow-y-auto pr-2 no-scrollbar">
+                    </div>
+            </div>
+
+            <div id="floatingPicker" class="hidden absolute z-[100] bg-white shadow-xl border rounded-lg p-2 grid grid-cols-4 gap-1 w-32">
+                </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

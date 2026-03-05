@@ -368,7 +368,7 @@ function renderLegend(counts) {
     Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([code, count]) => {
         const bead = BEAD_PALETTE.find(b => b.code === code);
         const item = document.createElement('div');
-        item.className = `legend-item flex max-h-10 items-center gap-2 rounded cursor-pointer ${highlightCode === code ? 'bg-fbfblue text-fbfwhite' : 'bg-white/80 text-fbfblack'} hover:bg-fbfblue/60 hover:scale-105 transition duration-300`;
+        item.className = `legend-item flex h-10 items-center gap-2 rounded cursor-pointer ${highlightCode === code ? 'bg-fbfblue text-fbfwhite' : 'bg-white/80 text-fbfblack'} hover:bg-fbfblue/60 hover:scale-105 transition duration-300`;
         item.innerHTML = `
             
             <div class="h-10 w-10 rounded-l flex-shrink-0 flex items-center justify-center relative" style="background-color: ${bead.hex}">

@@ -419,6 +419,157 @@ function renderLegend(counts) {
     });
 }
 
+async function downloadBlueprint() {
+    const size = parseInt(controls.grid.value);
+    const exportCellSize = 25; 
+    const margin = 100;
+    const headerHeight = 50;
+    const rulerOffset = 20; 
+    const footerMargin = 60;
+    
+    const counts = {};
+    currentPattern.forEach(b => { if(b) counts[b.code] = (counts[b.code] || 0) + 1; });
+    const sortedPalette = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    
+    // --- 1. CALCULATE DIMENSIONS FIRST ---
+    const gridWidth = size * exportCellSize;
+    const cardWidth = 200;
+    const cardHeight = 40;
+    const horizontalGap = 15;
+    const verticalGap = 15;
+
+    // Calculate columns based on grid width
+    const cols = Math.max(1, Math.floor((gridWidth + horizontalGap) / (cardWidth + horizontalGap)));
+    
+    // Now you can safely use 'cols' for these calculations
+    const legendRows = Math.ceil(sortedPalette.length / cols);
+    const legendTotalHeight = legendRows * (cardHeight + verticalGap);
+    const legendWidth = (cols * cardWidth) + ((cols - 1) * horizontalGap);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Width: Left Margin + Left Ruler + Grid + Right Ruler + Right Margin
+    canvas.width = Math.max(gridWidth + (rulerOffset * 2), legendWidth) + (margin * 2);
+    // Height: Header + Top Ruler + Grid + Bottom Ruler + Footer + Legend + Margin
+    canvas.height = headerHeight + gridWidth + (rulerOffset * 2) + footerMargin + legendTotalHeight + (margin * 2);
+
+    // Background
+    ctx.fillStyle = '#F0E9DD';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Header Title
+    ctx.fillStyle = '#8F3333';
+    ctx.font = '32px "Tiny5", sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Fuse Bead Fuel', margin + rulerOffset, margin -20);
+
+    // Positioning the grid centrally within the ruler frame
+    const gridLeft = (canvas.width - gridWidth) / 2;
+    const gridTop = headerHeight + rulerOffset + margin;
+
+    // --- DRAW RULERS (All 4 Edges) ---
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = 'rgba(41, 39, 37, 0.5)';
+    ctx.font = 'bold 11px sans-serif';
+
+    for (let i = 1; i <= size; i++) {
+        const offset = (i - 1) * exportCellSize + (exportCellSize / 2);
+        
+        // Horizontal Rulers (Top & Bottom)
+        if (i % 1 === 0 || i === 1 || i === size) {
+            ctx.textAlign = 'center';
+            // Top
+            ctx.fillText(i, gridLeft + offset, gridTop - 15);
+            // Bottom
+            ctx.fillText(i, gridLeft + offset, gridTop + gridWidth + 5);
+        }
+
+        // Vertical Rulers (Left & Right)
+        if (i % 1 === 0 || i === 1 || i === size) {
+            // Left
+            ctx.textAlign = 'right';
+            ctx.fillText(i, gridLeft - 5, gridTop + offset - 4);
+            // Right
+            ctx.textAlign = 'left';
+            ctx.fillText(i, gridLeft + gridWidth + 5, gridTop + offset - 4);
+        }
+    }
+
+    // --- DRAW BLUEPRINT GRID ---
+    currentPattern.forEach((bead, idx) => {
+        const x = idx % size;
+        const y = Math.floor(idx / size);
+        const posX = gridLeft + (x * exportCellSize);
+        const posY = gridTop + (y * exportCellSize);
+
+        if (bead) {
+            const isHighlighted = !highlightCode || bead.code === highlightCode;
+            ctx.globalAlpha = isHighlighted ? 1.0 : 0.15;
+            
+            ctx.fillStyle = bead.hex;
+            ctx.fillRect(posX, posY, exportCellSize, exportCellSize);
+            
+            if (showCodes && isHighlighted) {
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = getDistance(hexToRgb(bead.hex), {r:0,g:0,b:0}) < 140 ? 'white' : '#292725';
+                ctx.font = `${exportCellSize * 0.4}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(bead.code, posX + (exportCellSize/2), posY + (exportCellSize/2));
+            }
+        }
+        
+        ctx.globalAlpha = 0.2;
+        ctx.strokeStyle = '#292725';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(posX, posY, exportCellSize, exportCellSize);
+    });
+
+    // --- DRAW LEGEND ---
+    const legendTop = gridTop + gridWidth + rulerOffset + footerMargin;
+    const legendLeft = (canvas.width - legendWidth) / 2;
+
+    sortedPalette.forEach(([code, count], i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = legendLeft + (col * (cardWidth + horizontalGap));
+        const y = legendTop + (row * (cardHeight + verticalGap));
+        const bead = BEAD_PALETTE.find(b => b.code === code);
+        const isHighlighted = highlightCode === code;
+
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = isHighlighted ? '#2452AD' : 'rgba(255, 255, 255, 0.8)';
+        ctx.beginPath();
+        ctx.roundRect(x, y, cardWidth, cardHeight, 4);
+        ctx.fill();
+
+        ctx.fillStyle = bead.hex;
+        ctx.fillRect(x, y, cardHeight, cardHeight);
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isHighlighted ? '#F0E9DD' : '#292725';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(code, x + cardHeight + 8, y + 13);
+        
+        ctx.fillStyle = isHighlighted ? 'rgba(240, 233, 221, 0.7)' : 'rgba(41, 39, 37, 0.6)';
+        ctx.font = '10px sans-serif';
+        ctx.fillText(`${count} pcs`, x + cardHeight + 8, y + 27);
+    });
+
+    const link = document.createElement('a');
+    link.download = `FBF-Blueprint-Complete-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+}
+
+// Hook it up to your button
+document.getElementById('downloadBtn').onclick = downloadBlueprint;
+
+// Attach to button
+document.getElementById('downloadBtn').onclick = downloadBlueprint;
+
 controls.upload.onchange = (e) => {
     const reader = new FileReader();
     reader.onload = (f) => {

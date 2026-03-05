@@ -58,9 +58,7 @@
             width: 180px;
             overflow-y: auto;
             background: white;
-            padding: 12px;
             border-radius: 8px;
-            z-index: 100;
         }
 
         /* Header for each letter group */
@@ -243,7 +241,12 @@
                     </div>
                 </section>
                 
-                <button id="generateBtn" class="w-full bg-fbfolive text-sm text-white py-2 rounded-lg font-bold hover:bg-fbfblue shadow-md">Generate Blueprint</button>
+                <div class="space-y-2">
+                    <button id="generateBtn" class="w-full bg-fbfolive text-sm text-white py-2 rounded-lg font-bold hover:bg-fbfolive/80">Generate Blueprint</button>
+                    <button id="downloadBtn" class="w-full bg-fbfgold text-sm text-fbfblack py-2 rounded-lg font-bold hover:bg-fbfgold/80 transition-all">
+                        Download Blueprint
+                    </button>
+                </div>
             </div>
 
             <div class="lg:col-span-8 bg-transparent rounded-lg flex flex-col justify-center items-center overflow-auto relative min-h-0">

@@ -240,7 +240,7 @@ function openPicker(index, x, y, activeCodes) {
     picker.classList.remove('hidden');
     
     picker.style.left = `${Math.min(x, window.innerWidth - 150)}px`;
-    picker.style.top = `${Math.min(y, window.innerHeight - 200)}px`;
+    picker.style.top = `${Math.min(y, window.innerHeight*0.85 - 200)}px`;
 
     activeCodes.forEach(code => {
         const bead = BEAD_PALETTE.find(b => b.code === code);
@@ -289,15 +289,95 @@ function openPicker(index, x, y, activeCodes) {
     setTimeout(() => document.addEventListener('mousedown', closeHandler), 10);
 }
 
+let isFirstChangeInSession = true;
+
+function openGlobalPicker(oldCode, x, y) {
+    const picker = controls.floatingPicker;
+    picker.innerHTML = '';
+    picker.classList.remove('hidden');
+    isFirstChangeInSession = true; // Reset history trigger for this window session
+    
+    // Position the picker
+    picker.style.left = `${Math.min(x - 220, window.innerWidth - 200)}px`;
+    picker.style.top = `${Math.min(y - 80, window.innerHeight*0.9 - 320)}px`;
+
+    // 1. Group colors by First Letter
+    const groups = {};
+    BEAD_PALETTE.forEach(bead => {
+        const letter = bead.code.charAt(0).toUpperCase();
+        if (!groups[letter]) groups[letter] = [];
+        groups[letter].push(bead);
+    });
+
+    // 2. Sort and Render Groups
+    Object.keys(groups).sort().forEach(letter => {
+        // Add Letter Header
+        const header = document.createElement('div');
+        header.className = "group-header grow block w-full font-pixel";
+        header.innerText = `${letter}`;
+        picker.appendChild(header);
+
+        // Add Beads for this letter
+        groups[letter].forEach(newBead => {
+            const btn = document.createElement('div');
+            btn.className = "w-6 h-6 rounded-sm cursor-pointer hover:scale-110 transition-transform shadow-sm";
+            btn.style.backgroundColor = newBead.hex;
+            btn.title = newBead.code;
+
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                
+                // Only save history on the first click of this picker session
+                if (isFirstChangeInSession) {
+                    saveHistory();
+                    isFirstChangeInSession = false;
+                }
+
+                // Swap globally (Updates currentPattern but keeps picker open)
+                currentPattern = currentPattern.map(bead => 
+                    (bead && bead.code === oldCode) ? newBead : bead
+                );
+                
+                // Update oldCode to the new one so the next click targets the same beads
+                oldCode = newBead.code; 
+                
+                render(); 
+            };
+            picker.appendChild(btn);
+        });
+    });
+
+    // 3. Robust Close Handler
+    const closeHandler = (e) => {
+        // If the click is OUTSIDE the picker, hide it and remove this listener
+        if (!picker.contains(e.target)) {
+            picker.classList.add('hidden');
+            document.removeEventListener('mousedown', closeHandler);
+        }
+    };
+
+    // Use a small timeout so the click that opened the picker doesn't immediately close it
+    setTimeout(() => {
+        document.addEventListener('mousedown', closeHandler);
+    }, 50);
+}
+
 // --- LEGEND & DELETE ---
 function renderLegend(counts) {
     controls.legend.innerHTML = '';
     Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([code, count]) => {
         const bead = BEAD_PALETTE.find(b => b.code === code);
         const item = document.createElement('div');
-        item.className = `flex max-h-10 items-center gap-2 rounded cursor-pointer ${highlightCode === code ? 'bg-fbfblue text-fbfwhite' : 'bg-white/80 text-fbfblack'} hover:bg-fbfblue/60 hover:scale-105 transition duration-300`;
+        item.className = `legend-item flex max-h-10 items-center gap-2 rounded cursor-pointer ${highlightCode === code ? 'bg-fbfblue text-fbfwhite' : 'bg-white/80 text-fbfblack'} hover:bg-fbfblue/60 hover:scale-105 transition duration-300`;
         item.innerHTML = `
-            <div class="h-10 aspect-square rounded-l flex-shrink-0" style="background-color: ${bead.hex}"></div>
+            
+            <div class="h-10 aspect-square rounded-l flex-shrink-0 flex items-center justify-center relative" style="background-color: ${bead.hex}">
+                <button class="exchange-btn text-center p-1 transition-colors flex items-center justify-center" title="Replace this color globally">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M11.5 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L11 2.707V14.5a.5.5 0 0 0 .5.5zm-7-14a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L4 13.293V1.5a.5.5 0 0 1 .5-.5z"/>
+                    </svg>
+                </button>
+            </div>
             <div class="flex-1 p-2 min-w-0 font-sans">
                 <div class="text-[10px] font-bold truncate">${code}</div>
                 <div class="text-[9px] opacity-60">${count} pcs</div>
@@ -305,26 +385,33 @@ function renderLegend(counts) {
             <button class="p-2 delete-btn ${highlightCode === code ? 'text-fbfwhite/60' : 'text-fbfblack/40'} hover:text-fbfred">
                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
             </button>`;
-            
+
+        
+            // Handle the Exchange Click
+        item.querySelector('.exchange-btn').onclick = (e) => {
+            e.stopPropagation();
+            openGlobalPicker(code, e.pageX, e.pageY);
+        };
+
+        // Handle Highlight Click
         item.onclick = (e) => { 
-            if (!e.target.closest('.delete-btn')) { 
+            if (!e.target.closest('.delete-btn') && !e.target.closest('.exchange-btn')) { 
                 highlightCode = (highlightCode === code) ? null : code; 
                 render(); 
             } 
         };
 
+        // Handle Delete Click
         item.querySelector('.delete-btn').onclick = (e) => {
             e.stopPropagation();
             const others = Object.keys(counts).filter(c => c !== code);
             if (others.length === 0) return alert("Cannot delete the last remaining color.");
-            
-            saveHistory(); // Save BEFORE changing pattern
+            saveHistory();
             const subBead = BEAD_PALETTE.find(x => x.code === others.reduce((a, b) => {
                 const dA = getDistance(hexToRgb(bead.hex), hexToRgb(BEAD_PALETTE.find(y => y.code === a).hex));
                 const dB = getDistance(hexToRgb(bead.hex), hexToRgb(BEAD_PALETTE.find(y => y.code === b).hex));
                 return dB < dA ? b : a;
             }));
-            
             currentPattern = currentPattern.map(b => (b && b.code === code) ? subBead : b);
             render();
         };

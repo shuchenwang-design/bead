@@ -17,6 +17,64 @@
             display: inline-block;
         }
 
+        /* Container for the palette card */
+        .legend-item {
+            position: relative;
+            transition: background-color 0.2s;
+            overflow: hidden; /* Keeps the button from bleeding out */
+        }
+
+        /* Make the info (color + text) take full width */
+        .legend-info {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+        }
+
+        /* The Exchange Button: Absolutely positioned */
+        .exchange-btn {
+            position: absolute;
+            width:full;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 20;
+            border: none;
+        }
+
+        /* Show button on hover */
+        .legend-item:hover .exchange-btn {
+            opacity: 1;
+        }
+
+
+        /* Container for the global picker */
+        #floatingPicker {
+            max-height: 320px;
+            width: 180px;
+            overflow-y: auto;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+
+        /* Header for each letter group */
+        .group-header {
+            grid-column: span 5;
+            font-size: 10px;
+            font-weight: bold;
+            color: #999;
+            border-bottom: 1px solid #eee;
+            margin: 8px 0 4px 0;
+            padding-bottom: 2px;
+            text-transform: uppercase;
+        }
+
         /* Ensure the container itself doesn't hide the overflow of the rulers */
         .lg:col-span-8 {
             overflow: visible !important;
@@ -196,8 +254,8 @@
                 </div>
             </div>
 
-           <div class="lg:col-span-2 border-l pl-4 flex flex-col h-full max-h-[85vh]">
-                <div class="flex sticky top-0 bg-fbfwhite z-10 items-center justify-between mb-4 pb-2 border-b border-fbfblack/50">
+           <div class="lg:col-span-2 overflow-visible pl-4 flex flex-col h-full max-h-[85vh]">
+                <div class="flex sticky top-0 items-center justify-between mb-4 pb-2 border-b border-fbfblack/50">
                     <h3 class="text-sm font-bold uppercase text-fbfblack">Palette</h3>
                     <button id="toggleCodes" class="px-2 py-1 text-fbfwhite text-[10px] bg-fbfred hover:bg-fbfred/80 rounded font-bold transition">
                         LABEL: ON
@@ -208,8 +266,8 @@
                     </div>
             </div>
 
-            <div id="floatingPicker" class="hidden absolute z-[100] bg-white shadow-xl border rounded-lg p-2 grid grid-cols-4 gap-1 w-32">
-                </div>
+            <div id="floatingPicker" class="hidden no-scrollbar absolute z-[100] bg-white shadow-xl border rounded-lg p-2 flex flex-row flex-wrap gap-2">
+            </div>
         </div>
     </div>
     <script src="app.js"></script>

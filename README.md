@@ -38,16 +38,16 @@ To get the most out of the generator, it helps to understand the Sampling Logic:
 <br>**Transparency:** Upload PNG files with transparent backgrounds to ensure the generator only places beads exactly where you want them.
 <br>
 
-## ** Technical Stack**
-* **Frontend:** HTML5, Tailwind CSS
-* **Logic:** Vanilla JavaScript (ES6+)
-* **Engine:** HTML5 Canvas API for image processing and PNG generation
-* **Data:** JSON-based color palettes (Mard Bead System)
+## **Technical Stack**
+**Frontend:** HTML5, Tailwind CSS
+**Logic:** Vanilla JavaScript (ES6+)
+**Engine:** HTML5 Canvas API for image processing and PNG generation
+**Data:** JSON-based color palettes (Mard Bead System)
 
-## **📝 License & Usage**
+## **License & Usage**
 Distributed under the MIT License. See `LICENSE` for more information.
 
-**Author:** [shuchenwang-design](https://github.com/shuchenwang-design)  
-**Live Demo:** [View App Online](https://shuchenwang-design.github.io/bead/)
+**Author:** [Shuchen Wang](https://github.com/shuchenwang-design)  
+**Live Demo:** [Use Tool Online](https://shuchenwang-design.github.io/bead/)
 
 <br>Have fun fuse beading!

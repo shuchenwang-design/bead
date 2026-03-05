@@ -545,7 +545,7 @@ async function downloadBlueprint() {
         ctx.fill();
 
         ctx.fillStyle = bead.hex;
-        ctx.fillRect(x, y, cardHeight, cardHeight);
+        ctx.fillRect(x, y, cardHeight, cardHeight, 4, 4, 0, 0);
 
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';

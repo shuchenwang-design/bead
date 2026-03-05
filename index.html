@@ -72,23 +72,26 @@
             margin-top: -6px; /* Centers thumb on track */
             border: 1px solid #292725; /* fbfblack */
             image-rendering: pixelated;
+
+            transition: all 0.3s ease-in-out;
         }
 
         /* Firefox */
         input[type=range]::-moz-range-thumb {
             height: 16px;
-            width: 16px;
+            width: 13px;
             background: #EDA711;
             cursor: pointer;
             border: 2px solid #292725;
-            border-radius: 0px;
+            border-radius: 2px;
+            rotate: -10deg;
+            transition: all 0.3s ease-in-out;
         }
 
         /* 3. HOVER & ACTIVE STATES */
         input[type=range]:active::-webkit-slider-thumb {
             background: #8F3333; /* fbfred when sliding */
             rotate: 45deg;
-            transition: all 0.2s ease;
         }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">

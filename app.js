@@ -295,14 +295,14 @@ function renderLegend(counts) {
     Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([code, count]) => {
         const bead = BEAD_PALETTE.find(b => b.code === code);
         const item = document.createElement('div');
-        item.className = `flex max-h-10 items-center gap-2 bg-white/80 rounded cursor-pointer ${highlightCode === code ? 'ring-2 ring-fbfblue' : ''}`;
+        item.className = `flex max-h-10 items-center gap-2 rounded cursor-pointer ${highlightCode === code ? 'bg-fbfblue text-fbfwhite' : 'bg-white/80 text-fbfblack'} hover:bg-fbfblue/60 hover:scale-105 transition duration-300`;
         item.innerHTML = `
-            <div class="h-10 aspect-square rounded-l border flex-shrink-0" style="background-color: ${bead.hex}"></div>
+            <div class="h-10 aspect-square rounded-l flex-shrink-0" style="background-color: ${bead.hex}"></div>
             <div class="flex-1 p-2 min-w-0 font-sans">
                 <div class="text-[10px] font-bold truncate">${code}</div>
-                <div class="text-[9px] text-fbfblack/60">${count} pcs</div>
+                <div class="text-[9px] opacity-60">${count} pcs</div>
             </div>
-            <button class="p-2 delete-btn text-fbfblack/40 hover:text-fbfred">
+            <button class="p-2 delete-btn ${highlightCode === code ? 'text-fbfwhite/60' : 'text-fbfblack/40'} hover:text-fbfred">
                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
             </button>`;
             
